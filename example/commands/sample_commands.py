@@ -38,7 +38,13 @@ def bad_name():
     name instead
     """
     cprint("Good Name!", "green")
-
+@command("async-good-name")
+async def async_bad_name():
+    """
+    This command has a bad function name, but we ask Nubia to register a nicer
+    name instead
+    """
+    cprint("This is async!", "green")
 
 @command
 @argument("number", type=int)

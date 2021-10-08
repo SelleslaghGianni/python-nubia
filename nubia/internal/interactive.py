@@ -7,15 +7,11 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+
 import logging
 import os
 from typing import Any, List, Tuple
 
-from nubia.internal.helpers import catchall, find_approx, suggestions_msg
-from nubia.internal.io.eventbus import Listener
-from nubia.internal.options import Options
-from nubia.internal.ui.lexer import NubiaLexer
-from nubia.internal.ui.style import shell_style
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import Completer
@@ -27,6 +23,12 @@ from prompt_toolkit.layout.processors import HighlightMatchingBracketProcessor
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.patch_stdout import patch_stdout
 from termcolor import cprint
+
+from nubia.internal.helpers import catchall, find_approx, suggestions_msg, try_await
+from nubia.internal.io.eventbus import Listener
+from nubia.internal.options import Options
+from nubia.internal.ui.lexer import NubiaLexer
+from nubia.internal.ui.style import shell_style
 
 
 def split_command(text):
@@ -130,10 +132,10 @@ class IOLoop(Listener):
                 logging.error(err_message)
             try:
                 catchall(self._usagelogger.pre_exec)
-                result = await cmd_instance.run_interactive(cmd, args, raw)
-                catchall(self._usagelogger.post_exec, cmd, args, result, False)
-                self._status_bar.set_last_command_status(result)
-                return result
+                ret = await try_await(cmd_instance.run_interactive(cmd, args, raw))
+                catchall(self._usagelogger.post_exec, cmd, args, ret, False)
+                self._status_bar.set_last_command_status(ret)
+                return ret
             except NotImplementedError as e:
                 cprint("[NOT IMPLEMENTED]: {}".format(str(e)), "yellow", attrs=["bold"])
                 # not implemented error code
@@ -148,7 +150,9 @@ class IOLoop(Listener):
                     with patch_stdout():
                         text = await prompt.prompt_async(
                             PygmentsTokens(self._get_prompt_tokens()),
-                            rprompt=PygmentsTokens(self._status_bar.get_rprompt_tokens()),
+                            rprompt=PygmentsTokens(
+                                self._status_bar.get_rprompt_tokens()
+                            ),
                         )
                     session_logger = self._plugin.get_session_logger(self._ctx)
                     if session_logger:

@@ -7,12 +7,14 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from nubia.internal.cmdbase import Command
-from nubia.internal.io.eventbus import Listener
+import inspect
 
 from prompt_toolkit.completion import WordCompleter
-
 from termcolor import cprint
+
+from nubia.internal.cmdbase import Command
+from nubia.internal.helpers import try_await
+from nubia.internal.io.eventbus import Listener
 
 
 class CommandsRegistry:
@@ -34,7 +36,7 @@ class CommandsRegistry:
         for lst in listeners:
             self.register_listener(lst(self))
 
-    def register_command(self, cmd_instance, override=False):
+    async def register_command(self, cmd_instance, override=False):
         if not isinstance(cmd_instance, Command):
             raise TypeError(
                 "Invalid command instance, must be an instance of "
@@ -42,7 +44,8 @@ class CommandsRegistry:
             )
 
         cmd_instance.set_command_registry(self)
-        cmd_keys = cmd_instance.get_command_names()
+        cmd_keys = await try_await(cmd_instance.get_command_names())
+
         for cmd in cmd_keys:
             if not cmd_instance.get_help(cmd):
                 cprint(
@@ -56,12 +59,10 @@ class CommandsRegistry:
                 )
                 return None
 
-        cmd_instance.add_arguments(self._parser)
+        await try_await(cmd_instance.add_arguments(self._parser))
 
         if not override:
-            conflicts = [
-                cmd for cmd in cmd_keys if cmd in self._cmd_instance_map
-            ]
+            conflicts = [cmd for cmd in cmd_keys if cmd in self._cmd_instance_map]
             if conflicts:
                 raise ValueError(
                     "Some other command instance has registered "

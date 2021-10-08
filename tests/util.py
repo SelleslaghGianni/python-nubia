@@ -9,10 +9,10 @@
 
 import sys
 
-from nubia import PluginInterface
+from nubia import Nubia, PluginInterface
 from nubia.internal.blackcmd import CommandBlacklist
 from nubia.internal.cmdbase import AutoCommand
-from nubia import Nubia
+from nubia.internal.helpers import try_await
 
 
 class TestPlugin(PluginInterface):
@@ -33,10 +33,10 @@ class TestShell(Nubia):
         super(TestShell, self).__init__(name, plugin=TestPlugin(commands), testing=True)
         self.registry = self._registry
 
-    def run_cli_line(self, raw_line):
+    async def run_cli_line(self, raw_line):
         cli_args_list = raw_line.split()
-        args = self._pre_run(cli_args_list)
-        return self.run_cli(args)
+        args = await try_await(self._pre_run(cli_args_list))
+        return await self.run_cli(args)
 
     async def run_interactive_line(self, raw_line, cli_args=None):
         cli_args = cli_args or "test_shell connect"

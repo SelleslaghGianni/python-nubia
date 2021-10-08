@@ -8,10 +8,78 @@
 #
 
 import argparse
-from nubia_context import NubiaExampleContext
-from nubia_statusbar import NubiaExampleStatusBar
-from nubia import PluginInterface, CompletionDataSource
+
+from nubia import CompletionDataSource, PluginInterface
 from nubia.internal.blackcmd import CommandBlacklist
+from nubia.internal.cmdbase import Command
+from nubia.internal.typing import Command as CommandTuple
+from nubia.internal.typing import FunctionInspection
+from nubia.internal.typing.argparse import register_command
+
+from .nubia_context import NubiaExampleContext
+from .nubia_statusbar import NubiaExampleStatusBar
+
+
+class Example(Command):
+    cmds = {"example": "example"}
+
+    def run_interactive(self, cmd, args, raw):
+        print("Interactive sync works!")
+
+    def run_cli(self, args):
+        print("CLI sync works!")
+
+    def get_command_names(self):
+        return self.cmds.keys()
+
+    def add_arguments(self, parser):
+        register_command(
+            parser,
+            FunctionInspection(
+                command=CommandTuple(
+                    name="example",
+                    help="",
+                    aliases=[],
+                    exclusive_arguments=[],
+                ),
+                arguments={},
+                subcommands=[],
+            ),
+        )
+
+    def get_help(self, cmd, *args):
+        return self.cmds[cmd]
+
+
+class ExampleAsync(Command):
+    cmds = {"example-async": "example-async"}
+
+    async def run_interactive(self, cmd, args, raw):
+        print("Interactive async works!")
+
+    async def run_cli(self, args):
+        print("CLI async works!")
+
+    async def get_command_names(self):
+        return self.cmds.keys()
+
+    async def add_arguments(self, parser):
+        register_command(
+            parser,
+            FunctionInspection(
+                command=CommandTuple(
+                    name="example-async",
+                    help="",
+                    aliases=[],
+                    exclusive_arguments=[],
+                ),
+                arguments={},
+                subcommands=[],
+            ),
+        )
+
+    def get_help(self, cmd, *args):
+        return self.cmds[cmd]
 
 
 class NubiaExamplePlugin(PluginInterface):
@@ -20,6 +88,9 @@ class NubiaExamplePlugin(PluginInterface):
     use case. It allowes custom argument validation, control over command
     loading, custom context objects, and much more.
     """
+
+    def get_commands(self):
+        return [Example(), ExampleAsync()]
 
     def create_context(self):
         """

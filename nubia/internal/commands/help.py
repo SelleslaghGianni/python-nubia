@@ -9,9 +9,10 @@
 
 from nubia.internal import context
 from nubia.internal.cmdbase import Command
-from nubia.internal.exceptions import UnknownCommand, CommandError
+from nubia.internal.exceptions import CommandError, UnknownCommand
+from nubia.internal.helpers import try_await
 from prettytable import PrettyTable
-from termcolor import cprint, colored
+from termcolor import colored, cprint
 
 
 class HelpCommand(Command):
@@ -27,19 +28,15 @@ class HelpCommand(Command):
         return context.get_context().registry
 
     def get_completions(self, cmd, document, complete_event):
-        return self.registry.get_completer().get_completions(
-            document, complete_event
-        )
+        return self.registry.get_completer().get_completions(document, complete_event)
 
-    def run_interactive(self, _0, args, _2):
+    async def run_interactive(self, _0, args, _2):
         if args:
             args = args.split()
             try:
                 cmd_instance = self.registry.find_command(args[0])
                 if not cmd_instance:
-                    raise UnknownCommand(
-                        "Command `{}` is " "unknown".format(args[0])
-                    )
+                    raise UnknownCommand("Command `{}` is " "unknown".format(args[0]))
                 else:
                     help_msg = cmd_instance.get_help(args[0].lower(), *args)
                 print(help_msg)
@@ -55,7 +52,7 @@ class HelpCommand(Command):
             commands = {
                 cmd_name: cmd
                 for cmd in self.registry.get_all_commands()
-                for cmd_name in cmd.get_command_names()
+                for cmd_name in await try_await(cmd.get_command_names())
             }
 
             for cmd_name in sorted(commands):

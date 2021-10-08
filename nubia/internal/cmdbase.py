@@ -16,10 +16,19 @@ from collections import OrderedDict
 from textwrap import dedent
 from typing import Iterable, Optional
 
+from prompt_toolkit.completion import CompleteEvent, Completion, WordCompleter
+from prompt_toolkit.document import Document
+from termcolor import cprint
+
 from nubia.internal import parser
 from nubia.internal.completion import AutoCommandCompletion
 from nubia.internal.exceptions import CommandParseError
-from nubia.internal.helpers import find_approx, function_to_str, suggestions_msg
+from nubia.internal.helpers import (
+    find_approx,
+    function_to_str,
+    suggestions_msg,
+    try_await,
+)
 from nubia.internal.options import Options
 from nubia.internal.typing import FunctionInspection, inspect_object
 from nubia.internal.typing.argparse import (
@@ -29,9 +38,6 @@ from nubia.internal.typing.argparse import (
 )
 from nubia.internal.typing.builder import apply_typing
 from nubia.internal.typing.inspect import is_list_type
-from prompt_toolkit.completion import CompleteEvent, Completion, WordCompleter
-from prompt_toolkit.document import Document
-from termcolor import cprint
 
 from . import context
 
@@ -456,7 +462,7 @@ class AutoCommand(Command):
             if v is not None
         }
 
-    def run_cli(self, args):
+    async def run_cli(self, args):
         # if this is a super-command, we need to dispatch the call to the
         # correct function
         kwargs = self._kwargs_for_fn(self._fn, args)
@@ -473,12 +479,11 @@ class AutoCommand(Command):
                 kwargs = self._kwargs_for_fn(fn, args)
             else:
                 fn = self._fn
-            if inspect.iscoroutinefunction(fn):
-                # execute in an event loop
-                loop = asyncio.get_event_loop()
-                return loop.run_until_complete(fn(**kwargs))
-            else:
-                return fn(**kwargs)
+
+            ret = fn(**kwargs)
+            if inspect.isawaitable(ret):
+                return await ret
+            return ret
         except Exception as e:
             cprint("Error running command: {}".format(str(e)), "red")
             cprint("-" * 60, "yellow")
@@ -494,7 +499,7 @@ class AutoCommand(Command):
         assert self.super_command
         return subcommand.lower() in self._subcommand_names
 
-    def add_arguments(self, parser):
+    async def add_arguments(self, parser):
         register_command(parser, self.metadata)
 
     def get_command_names(self):
