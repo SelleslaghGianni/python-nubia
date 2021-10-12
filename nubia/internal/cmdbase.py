@@ -407,10 +407,8 @@ class AutoCommand(Command):
             try:
                 # convert argument names back to match the function signature
                 args_dict = {args_metadata[k].arg: v for k, v in args_dict.items()}
-                if inspect.iscoroutinefunction(fn):
-                    ret = await fn(**args_dict)
-                else:
-                    ret = fn(**args_dict)
+
+                ret = await try_await(fn(**args_dict))
                 ctx.set_verbose(old_verbose)
             except Exception as e:
                 cprint("Error running command: {}".format(str(e)), "red")
@@ -480,9 +478,8 @@ class AutoCommand(Command):
             else:
                 fn = self._fn
 
-            ret = fn(**kwargs)
-            if inspect.isawaitable(ret):
-                return await ret
+            ret = await try_await(fn(**kwargs))
+
             return ret
         except Exception as e:
             cprint("Error running command: {}".format(str(e)), "red")

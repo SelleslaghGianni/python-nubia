@@ -11,11 +11,14 @@ import os
 import sys
 import tempfile
 import unittest
+
 from nubia import argument, command
+
 from tests.util import TestShell
 
-class ReadStdinTest(unittest.TestCase):
-    def test_read_from_stdin(self):
+
+class ReadStdinTest(unittest.IsolatedAsyncioTestCase):
+    async def test_read_from_stdin(self):
         @command
         @argument("arg")
         def test_command(arg: str) -> int:
@@ -26,14 +29,11 @@ class ReadStdinTest(unittest.TestCase):
             return 22
 
         command_file = tempfile.NamedTemporaryFile(
-            mode="w+",
-            prefix="test_read_from_stdin",
-            delete=True
+            mode="w+", prefix="test_read_from_stdin", delete=True
         )
         command_file.write("test-command arg=test_arg")
         command_file.flush()
         os.lseek(command_file.fileno(), 0, os.SEEK_SET)
         os.dup2(command_file.fileno(), sys.stdin.fileno())
         shell = TestShell(commands=[test_command])
-        loop = asyncio.get_event_loop()
-        self.assertEqual(22, loop.run_until_complete(shell.run(cli_args=["", "connect"])))
+        self.assertEqual(22, await shell.run_async(cli_args=["", "connect"]))

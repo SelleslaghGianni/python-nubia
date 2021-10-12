@@ -10,11 +10,12 @@
 import unittest
 
 from nubia import command
+
 from tests.util import TestShell
 
 
-class SuperCommandSpecTest(unittest.TestCase):
-    def test_super_basics(self):
+class SuperCommandSpecTest(unittest.IsolatedAsyncioTestCase):
+    async def test_super_basics(self):
         this = self
 
         @command
@@ -36,18 +37,18 @@ class SuperCommandSpecTest(unittest.TestCase):
         shell = TestShell(commands=[SuperCommand])
         self.assertEqual(
             45,
-            shell.run_cli_line(
+            await shell.run_cli_line(
                 "test_shell super-command sub-command " "--arg1=giza --arg2=22"
             ),
         )
         self.assertEqual(
             22,
-            shell.run_cli_line(
+            await shell.run_cli_line(
                 "test_shell super-command another-command " "--arg1=giza"
             ),
         )
 
-    def test_super_common_arguments(self):
+    async def test_super_common_arguments(self):
         this = self
 
         @command
@@ -68,20 +69,20 @@ class SuperCommandSpecTest(unittest.TestCase):
         shell = TestShell(commands=[SuperCommand])
         self.assertEqual(
             45,
-            shell.run_cli_line(
+            await shell.run_cli_line(
                 "test_shell super-command --shared=15 "
                 "sub-command --arg1=giza --arg2=22"
             ),
         )
         self.assertEqual(
             45,
-            shell.run_cli_line(
+            await shell.run_cli_line(
                 "test_shell super-command sub-command "
                 "--arg1=giza --arg2=22 --shared=15"
             ),
         )
 
-    def test_super_no_docstring(self):
+    async def test_super_no_docstring(self):
         @command
         class SuperCommand:
             "SuperHelp"
@@ -93,7 +94,6 @@ class SuperCommandSpecTest(unittest.TestCase):
         shell = TestShell(commands=[SuperCommand])
 
         with self.assertRaises(SystemExit):
-            shell.run_cli_line(
-                "test_shell super-command "
-                "sub-command --arg1=human"
+            await shell.run_cli_line(
+                "test_shell super-command " "sub-command --arg1=human"
             )

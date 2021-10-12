@@ -8,6 +8,7 @@
 #
 
 import argparse
+import asyncio
 import codecs
 import locale
 import logging
@@ -94,6 +95,7 @@ class Nubia:
 
         # Setting the context to be global
         context._ctx = self._plugin.create_context()
+        print(f"{context._ctx=}")
         self._ctx = context.get_context()
         assert isinstance(self._ctx, context.Context)
         # Setting the binary name
@@ -253,20 +255,18 @@ class Nubia:
         self._registry.register_priority_listener(self._ctx)
         # register built-in commands
         for cmd in builtin_cmds:
-            await try_await(self._registry.register_command(cmd()))
+            await self._registry.register_command(cmd())
 
         # load commands from plugin
         for cmd in self._plugin.get_commands():
-            await try_await(self._registry.register_command(cmd, override=True))
+            await self._registry.register_command(cmd, override=True)
         # load commands from command packages
         if not isinstance(self._command_pkgs, list):
             self._command_pkgs = [self._command_pkgs]
         for pkg in self._command_pkgs:
             for cmd in cmdloader.load_commands(pkg):
-                await try_await(
-                    self._registry.register_command(
-                        AutoCommand(cmd, self._options), override=True
-                    )
+                await self._registry.register_command(
+                    AutoCommand(cmd, self._options), override=True
                 )
 
         # By default, if we didn't receive any command we will use the connect
@@ -284,7 +284,11 @@ class Nubia:
         self._registry.set_cli_args(args)
         return args
 
-    async def run(self, cli_args=sys.argv, ipython=False):
+    def run(self, cli_args=sys.argv, ipython=False):
+        return asyncio.run(self.run_async(cli_args, ipython))
+
+    async def run_async(self, cli_args=sys.argv, ipython=False):
+        # TODO: non-async version
         """
         Runs nubia either in interactive or cli (or parsing commands from
         stdin) based on the cli_args supplied (defaults to sys.argv). This will

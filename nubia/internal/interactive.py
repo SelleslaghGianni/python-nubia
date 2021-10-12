@@ -132,10 +132,10 @@ class IOLoop(Listener):
                 logging.error(err_message)
             try:
                 catchall(self._usagelogger.pre_exec)
-                ret = await try_await(cmd_instance.run_interactive(cmd, args, raw))
-                catchall(self._usagelogger.post_exec, cmd, args, ret, False)
-                self._status_bar.set_last_command_status(ret)
-                return ret
+                result = await try_await(cmd_instance.run_interactive(cmd, args, raw))
+                catchall(self._usagelogger.post_exec, cmd, args, result, False)
+                self._status_bar.set_last_command_status(result)
+                return result
             except NotImplementedError as e:
                 cprint("[NOT IMPLEMENTED]: {}".format(str(e)), "yellow", attrs=["bold"])
                 # not implemented error code
