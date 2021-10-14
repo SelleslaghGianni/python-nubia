@@ -23,14 +23,14 @@ class SuperCommandSpecTest(unittest.IsolatedAsyncioTestCase):
             "SuperHelp"
 
             @command
-            def sub_command(self, arg1: str, arg2: int):
+            async def sub_command(self, arg1: str, arg2: int):
                 "SubHelp"
                 this.assertEqual(arg1, "giza")
                 this.assertEqual(arg2, 22)
                 return 45
 
             @command
-            def another_command(self, arg1: str):
+            async def another_command(self, arg1: str):
                 "AnotherHelp"
                 return 22
 
@@ -38,13 +38,13 @@ class SuperCommandSpecTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             45,
             await shell.run_cli_line(
-                "test_shell super-command sub-command " "--arg1=giza --arg2=22"
+                "test_shell super-command sub-command --arg1=giza --arg2=22"
             ),
         )
         self.assertEqual(
             22,
             await shell.run_cli_line(
-                "test_shell super-command another-command " "--arg1=giza"
+                "test_shell super-command another-command --arg1=giza"
             ),
         )
 
@@ -59,7 +59,7 @@ class SuperCommandSpecTest(unittest.IsolatedAsyncioTestCase):
                 self.shared = shared
 
             @command
-            def sub_command(self, arg1: str, arg2: int):
+            async def sub_command(self, arg1: str, arg2: int):
                 "SubHelp"
                 this.assertEqual(self.shared, 15)
                 this.assertEqual(arg1, "giza")
@@ -88,12 +88,28 @@ class SuperCommandSpecTest(unittest.IsolatedAsyncioTestCase):
             "SuperHelp"
 
             @command
-            def sub_command(self, arg1: str):
+            async def sub_command(self, arg1: str):
                 return f"Hi {arg1}"
 
         shell = TestShell(commands=[SuperCommand])
 
         with self.assertRaises(SystemExit):
             await shell.run_cli_line(
-                "test_shell super-command " "sub-command --arg1=human"
+                "test_shell super-command sub-command --arg1=human"
             )
+
+    async def test_sync_sub_command(self):
+        @command
+        class SuperCommand:
+            "SuperHelp"
+
+            @command
+            def sub_command(self):
+                "SubHelp"
+                return 45
+
+        shell = TestShell(commands=[SuperCommand])
+        self.assertEqual(
+            45,
+            await shell.run_cli_line("test_shell super-command sub-command"),
+        )

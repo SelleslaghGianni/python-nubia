@@ -288,7 +288,6 @@ class Nubia:
         return asyncio.run(self.run_async(cli_args, ipython))
 
     async def run_async(self, cli_args=sys.argv, ipython=False):
-        # TODO: non-async version
         """
         Runs nubia either in interactive or cli (or parsing commands from
         stdin) based on the cli_args supplied (defaults to sys.argv). This will

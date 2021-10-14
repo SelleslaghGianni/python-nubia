@@ -17,8 +17,18 @@ from termcolor import cprint
 from tests.util import TestShell
 
 
-# TODO: Allemaal async maken
 class CommandSpecTest(unittest.IsolatedAsyncioTestCase):
+    async def test_command_sync(self):
+        @command
+        def test_command() -> int:
+            """
+            Sample Docstring
+            """
+            return 22
+
+        shell = TestShell(commands=[test_command])
+        self.assertEqual(22, await shell.run_cli_line("test_shell test-command "))
+
     async def test_command_name_spec1(self):
         @command
         @argument("arg", description="argument help", aliases=["i"])
